@@ -13,5 +13,12 @@ namespace Civ4API.Controllers
             var value =System.Text.Json.JsonSerializer.Serialize(Worker.Scrape().Item1, typeof(Dictionary<string, string>));
             return value;
         }
+
+        [HttpPost]
+
+        public int Index(int value)
+        {
+            return Worker.SetTurnTimer(value);
+        }
     }
 }

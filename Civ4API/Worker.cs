@@ -17,6 +17,10 @@ namespace Civ4API
         const int WM_COMMAND = 0x0111;
         const int BM_CLICKED = 245;
 
+        [return: MarshalAs(UnmanagedType.Bool)]
+        [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Auto)]
+        static extern bool PostMessage(IntPtr hWnd, uint Msg, IntPtr wParam, IntPtr lParam);
+
         [DllImport("user32.Dll")]
         [return: MarshalAs(UnmanagedType.Bool)]
         public static extern bool EnumChildWindows(IntPtr parentHandle, Win32Callback callback, IntPtr lParam);
@@ -29,6 +33,9 @@ namespace Civ4API
 
         [DllImport("user32.dll", CharSet = CharSet.Auto)]
         public static extern int SendMessage(IntPtr hWnd, uint msg, int wParam, IntPtr lParam);
+
+        [DllImport("user32.dll")]
+        static extern bool SetForegroundWindow(IntPtr hWnd);
 
         private static bool EnumWindow(IntPtr handle, IntPtr pointer)
         {
@@ -83,16 +90,7 @@ namespace Civ4API
         }
         public static Tuple<Dictionary<string,string>,int> Scrape()
         {
-            var dictionary = new Dictionary<string, int>()
-            {
-                { "Turn",0 },
-                //{ "Turn Timer Button", 1 },
-                { "Time", 2 },
-            };
-
-            var close = false;
             Process pitbossHandle = null;
-
             //while (!close)
             {
                 if (pitbossHandle == null)
@@ -117,23 +115,6 @@ namespace Civ4API
 
                 var children = GetChildWindows(window);
 
-                /*
-                for(var i = 0; i < children.Count; ++i)
-                {
-                    var child = children[i];
-                    var childClass = GetWinClass(child);
-                    var childName = new StringBuilder();
-                    GetClassName(child, childName, 255);
-
-                    int txtlen = (int)SendMessage(child, WM_GETTEXTLENGTH, 20, null);
-                    StringBuilder text = new StringBuilder(txtlen);
-                    int RetVal = (int)SendMessage(child, WM_GETTEXT, text.Capacity, text);
-
-                    if (childName.Length > 0)
-                    { }
-                }
-                */
-
                 var nameAndYear = GetText(children[0]);
                 var split = nameAndYear.Split('-');
 
@@ -150,6 +131,31 @@ namespace Civ4API
 
 
 
+        }
+
+        public static int SetTurnTimer(int value)
+        {
+            Process pitbossHandle = null;
+            if (pitbossHandle == null)
+            {
+                pitbossHandle = AquireHandle();
+            }
+
+            if (pitbossHandle == null)
+            {
+                return 500;
+            }
+            var children = GetChildWindows(pitbossHandle.MainWindowHandle);
+
+            SetForegroundWindow(pitbossHandle.MainWindowHandle);
+            System.Threading.Thread.Sleep(1000);
+            PostMessage(children[1], BM_CLICKED, IntPtr.Zero, IntPtr.Zero);
+            System.Threading.Thread.Sleep(1000);
+            System.Windows.Forms.SendKeys.SendWait("+{END}");
+            System.Threading.Thread.Sleep(1000);
+            System.Windows.Forms.SendKeys.SendWait(value+"\r");
+
+            return 200;
         }
 
         static string GetText(IntPtr handle)

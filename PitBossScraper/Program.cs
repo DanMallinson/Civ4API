@@ -18,6 +18,12 @@ namespace PitBossScraper
         private int WM_COMMAND = 0x0111;
         private const int BM_CLICKED = 245;
 
+        [DllImport("user32.dll", SetLastError = true)]
+        public static extern IntPtr SetActiveWindow(IntPtr hWnd);
+
+        [DllImport("user32.dll")]
+        static extern bool SetForegroundWindow(IntPtr hWnd);
+
         [DllImport("user32.Dll")]
         [return: MarshalAs(UnmanagedType.Bool)]
         public static extern bool EnumChildWindows(IntPtr parentHandle, Win32Callback callback, IntPtr lParam);
@@ -30,6 +36,10 @@ namespace PitBossScraper
 
         [DllImport("user32.dll", CharSet = CharSet.Auto)]
         public static extern int SendMessage(IntPtr hWnd, uint msg, int wParam, IntPtr lParam);
+
+        [return: MarshalAs(UnmanagedType.Bool)]
+        [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Auto)]
+        static extern bool PostMessage(IntPtr hWnd, uint Msg, IntPtr wParam, IntPtr lParam);
 
         private static bool EnumWindow(IntPtr handle, IntPtr pointer)
         {
@@ -129,6 +139,8 @@ namespace PitBossScraper
                 }
                 */
 
+                var c = GetChildWindows(pitbossHandle.MainWindowHandle);
+
                 var nameAndYear = GetText(children[0]);
                 var split = nameAndYear.Split('-');
 
@@ -137,6 +149,14 @@ namespace PitBossScraper
                 Console.WriteLine("Time     : " + GetText(children[2]).Trim());
 
                 Console.ReadLine();
+
+                SetForegroundWindow(pitbossHandle.MainWindowHandle);
+                System.Threading.Thread.Sleep(1000);
+                PostMessage(children[1], BM_CLICKED, IntPtr.Zero, IntPtr.Zero);
+                System.Threading.Thread.Sleep(1000);
+                System.Windows.Forms.SendKeys.SendWait("+{END}");
+                System.Threading.Thread.Sleep(1000);
+                System.Windows.Forms.SendKeys.SendWait("100\r");
             }
 
 
